@@ -1,12 +1,13 @@
-import discord
+    import discord
 from discord.ext import commands, tasks
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import os
+import json
 
 # Config
-TOKEN = os.getenv('DISCORD_TOKEN')  # Your bot token from Discord
-YOUTUBE_TOKEN_FILE = 'token.json'
+TOKEN = os.getenv('DISCORD_TOKEN')
+YOUTUBE_TOKEN_JSON = os.getenv('YOUTUBE_TOKEN_JSON')
 SCOPES = ['https://www.googleapis.com/auth/youtube.force-ssl']
 VERIFIED_SUB_THRESHOLD = 100000
 CHECK_INTERVAL = 30  # seconds
@@ -20,11 +21,28 @@ youtube_service = None
 checked_comments = set()
 
 def authenticate_youtube():
-    """Load YouTube credentials"""
+    """Load YouTube credentials from environment variable"""
     global youtube_service
     try:
-        creds = Credentials.from_authorized_user_file(YOUTUBE_TOKEN_FILE, SCOPES)
+        if not YOUTUBE_TOKEN_JSON:
+            print("Error: YOUTUBE_TOKEN_JSON environment variable not set")
+            return False
+        
+        # Parse the JSON token
+        token_data = json.loads(YOUTUBE_TOKEN_JSON)
+        
+        # Create credentials from the token
+        creds = Credentials(
+            token=token_data.get('token'),
+            refresh_token=token_data.get('refresh_token'),
+            token_uri=token_data.get('token_uri'),
+            client_id=token_data.get('client_id'),
+            client_secret=token_data.get('client_secret'),
+            scopes=token_data.get('scopes')
+        )
+        
         youtube_service = build('youtube', 'v3', credentials=creds)
+        print("YouTube authenticated successfully")
         return True
     except Exception as e:
         print(f"YouTube auth error: {e}")
