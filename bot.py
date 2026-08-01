@@ -10,6 +10,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 YOUTUBE_TOKEN_JSON = os.getenv('YOUTUBE_TOKEN_JSON')
 SCOPES = ['https://www.googleapis.com/auth/youtube.force-ssl']
 VERIFIED_SUB_THRESHOLD = 100000
+YOUR_CHANNEL_ID = "UCsQ29vcqdlCzRBvk2m2BOcQ"  # Your channel - comments won't be deleted
 CHECK_INTERVAL = 30  # seconds
 
 # Bot setup
@@ -74,7 +75,7 @@ def get_subscriber_count(channel_id):
     return 0
 
 def moderate_comments():
-    """Check and delete non-verified comments"""
+    """Check and delete non-verified comments (except from owner)"""
     video_id = get_latest_video_id()
     if not video_id:
         return
@@ -98,14 +99,21 @@ def moderate_comments():
             
             checked_comments.add(comment_id)
             
+            # Skip if it's from owner channel
+            if channel_id == YOUR_CHANNEL_ID:
+                print(f"✓ Owner: {author} - Keeping")
+                continue
+            
             sub_count = get_subscriber_count(channel_id)
             
             if sub_count < VERIFIED_SUB_THRESHOLD:
                 try:
                     youtube_service.comments().delete(id=comment_id).execute()
-                    print(f"Deleted: {author} ({sub_count} subs)")
+                    print(f"✗ Deleted: {author} ({sub_count} subs)")
                 except Exception as e:
                     print(f"Error deleting {comment_id}: {e}")
+            else:
+                print(f"✓ Verified: {author} ({sub_count} subs) - Keeping")
     
     except Exception as e:
         print(f"Error moderating: {e}")
