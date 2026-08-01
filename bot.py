@@ -74,7 +74,7 @@ def get_subscriber_count(channel_id):
     return 0
 
 def moderate_comments():
-    """Check and hide non-verified comments"""
+    """Check and delete non-verified comments"""
     video_id = get_latest_video_id()
     if not video_id:
         return
@@ -102,13 +102,10 @@ def moderate_comments():
             
             if sub_count < VERIFIED_SUB_THRESHOLD:
                 try:
-                    youtube_service.comments().setModerationStatus(
-                        id=comment_id,
-                        moderationStatus='heldForReview'
-                    ).execute()
-                    print(f"Hidden: {author} ({sub_count} subs)")
+                    youtube_service.comments().delete(id=comment_id).execute()
+                    print(f"Deleted: {author} ({sub_count} subs)")
                 except Exception as e:
-                    print(f"Error hiding {comment_id}: {e}")
+                    print(f"Error deleting {comment_id}: {e}")
     
     except Exception as e:
         print(f"Error moderating: {e}")
